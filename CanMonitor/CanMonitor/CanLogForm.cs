@@ -14,11 +14,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using Peak.Can.Basic;
+using TPCANHandle = System.Byte;
+using can_hw;
 
 namespace CanMonitor
 {
     public partial class CanLogForm : Form
     {
+        #region PEAK-specific members
+        private TPCANHandle[] m_HandlesArray;
+        private TPCANHandle m_PcanHandle;
+        private TPCANBaudrate m_PcanBaudRate;
+        #endregion
 
         private libCanopenSimple.libCanopenSimple lco = new libCanopenSimple.libCanopenSimple();
 
@@ -105,7 +113,23 @@ namespace CanMonitor
             checkBox_showNMT.Checked = Properties.Settings.Default.showNMT;
             checkBox_showEMCY.Checked = Properties.Settings.Default.showEMCY;
 
+            this.comboBox_vendor.Items.Clear();
+            var vendorNames = Enum.GetNames(typeof(SupportedVendor));
+            for (int i = 0; i < vendorNames.Length; i++) {
+                this.comboBox_vendor.Items.Add(vendorNames[i]);
+            }
+            this.comboBox_vendor.SelectedIndex = 1;
 
+            this.m_HandlesArray = new TPCANHandle[] {
+                PCANBasic.PCAN_USBBUS1,
+                PCANBasic.PCAN_USBBUS2,
+                PCANBasic.PCAN_USBBUS3,
+                PCANBasic.PCAN_USBBUS4,
+                PCANBasic.PCAN_USBBUS5,
+                PCANBasic.PCAN_USBBUS6,
+                PCANBasic.PCAN_USBBUS7,
+                PCANBasic.PCAN_USBBUS8,
+            };
 
             textBox_info.AppendText("Searching for drivers...\r\n\r\n");
             string[] founddrivers = Directory.GetFiles("drivers\\", "*.dll");
@@ -116,7 +140,8 @@ namespace CanMonitor
                 drivers.Add(driver.Substring(0, driver.Length - 4));
             }
 
-            enumerateports();
+            //enumerateports();
+            enumerateports((SupportedVendor)this.comboBox_vendor.SelectedIndex);
 
             if (comboBox_port.Items.Count == 0)
             {
@@ -173,6 +198,7 @@ namespace CanMonitor
 
             Properties.Settings.Default.Reload();
 
+#if false
             //select last used port
             foreach (driverport dp in comboBox_port.Items)
             {
@@ -183,7 +209,7 @@ namespace CanMonitor
                     break;
                 }
             }
-
+#endif
 
             this.Shown += Form1_Shown;
 
@@ -1124,6 +1150,7 @@ namespace CanMonitor
                     return;
                 }
 
+#if false
                 driverport dp = (driverport)comboBox_port.SelectedItem;
 
                 textBox_info.AppendText(String.Format("Trying to open port {0} using driver {1} \r\n", dp.port, dp.driver));
@@ -1142,6 +1169,9 @@ namespace CanMonitor
                 }
 
                 lco.open(port, (BUSSPEED)rate, dp.driver);
+#else
+                lco.open(this.m_PcanHandle, this.m_PcanBaudRate);
+#endif
 
                 if (lco.isopen())
                 {
@@ -1152,10 +1182,11 @@ namespace CanMonitor
 
                     textBox_info.AppendText("Success port open\r\n");
 
+#if false
                     Properties.Settings.Default.lastport = dp.port;
                     Properties.Settings.Default.lastdriver = dp.driver;
                     Properties.Settings.Default.lastrate = comboBox_rate.Text;
-
+#endif
 
                     Properties.Settings.Default.Save();
 
@@ -1207,8 +1238,10 @@ namespace CanMonitor
 
                 lco.close();
 
+#if false /// TODO
                 //FIXME hardcoded driver
                 lco.open(s.port, (BUSSPEED)rate, "drivers\\can_canusb_win32");
+#endif
 
                 button_open.Text = "Close";
                 textBox_info.AppendText("Success port open\r\n");
@@ -1259,11 +1292,18 @@ namespace CanMonitor
         {
             SettingsMgr.settings.options.selectedport = comboBox_port.SelectedItem.ToString();
 
+            string strTemp = comboBox_port.Text;
+            strTemp = strTemp.Substring(strTemp.IndexOf('B') + 1, 1);
+            strTemp = "0x5" + strTemp;
+            this.m_PcanHandle = Convert.ToByte(strTemp, 16);
         }
 
         private void comboBox_rate_SelectedIndexChanged(object sender, EventArgs e)
         {
             SettingsMgr.settings.options.selectedrate = comboBox_rate.SelectedIndex;
+
+            TPCANBaudrate[] baudValue = (TPCANBaudrate[])Enum.GetValues(typeof(TPCANBaudrate));
+            this.m_PcanBaudRate = baudValue[this.comboBox_rate.SelectedIndex];
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -1309,7 +1349,7 @@ namespace CanMonitor
 
 
 
-        #region pluginloader
+#region pluginloader
 
         List<string> loadedplugins = new List<string>();
         private void loadplugin(String pfilename, bool addmru)
@@ -1785,7 +1825,11 @@ namespace CanMonitor
 
         private void button_refresh_Click(object sender, EventArgs e)
         {
+#if false
             enumerateports();
+#else
+            this.enumerateports((SupportedVendor)this.comboBox_vendor.SelectedIndex);
+#endif
         }
 
 
@@ -1843,6 +1887,75 @@ namespace CanMonitor
                 dp.VID = p.vid;
                 dp.driver = "drivers\\can_canusb_win32";
                 comboBox_port.Items.Add(dp);
+            }
+        }
+
+        private void enumerateports(SupportedVendor vendor)
+        {
+            comboBox_port.Text = "";
+            comboBox_port.Items.Clear();
+
+
+            textBox_info.AppendText("Enumerating ports...." + Environment.NewLine);
+
+            switch (vendor) {
+#if false
+                case SupportedVendor.CANFESTIVAL: {
+                    foreach (string s in drivers) {
+                        textBox_info.AppendText(String.Format("Attempting to enumerate with driver {0}", s) + Environment.NewLine);
+
+                        lco.enumerate(s);
+                    }
+
+                    foreach (KeyValuePair<string, List<string>> kvp in lco.ports) {
+                        List<string> ps = kvp.Value;
+
+                        foreach (string s in ps) {
+
+                            textBox_info.AppendText(string.Format("Found port {0}", s) + Environment.NewLine);
+
+                            driverport dp = new driverport();
+                            dp.port = s;
+                            dp.driver = kvp.Key;
+
+                            comboBox_port.Items.Add(dp);
+                        }
+                    }
+                    break;
+                }
+#endif
+                case SupportedVendor.PEAK: {
+                    UInt32 iBuffer;
+                    TPCANStatus stsResult;
+                    try {
+                        for (int i = 0; i < m_HandlesArray.Length; i++) {
+                            // Includes all no-Plug&Play Handles
+                            if (( m_HandlesArray[i] >= PCANBasic.PCAN_USBBUS1 ) &&
+                                ( m_HandlesArray[i] <= PCANBasic.PCAN_USBBUS8 )) {
+                                stsResult = PCANBasic.GetValue(m_HandlesArray[i], TPCANParameter.PCAN_CHANNEL_CONDITION, out iBuffer, sizeof(UInt32));
+                                if (( stsResult == TPCANStatus.PCAN_ERROR_OK ) && ( iBuffer == PCANBasic.PCAN_CHANNEL_AVAILABLE )) {
+                                    this.comboBox_port.Items.Add(string.Format("PCAN-USB{0}", m_HandlesArray[i] & 0x0F));
+                                }
+                            }
+                        }
+                        this.comboBox_port.SelectedIndex = this.comboBox_port.Items.Count - 1;
+
+                    } catch (Exception ex) {
+                        MessageBox.Show(ex.Message, "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Environment.Exit(-1);
+                    }
+
+                    string[] baudName = Enum.GetNames(typeof(TPCANBaudrate));
+                    this.comboBox_rate.Items.Clear();
+                    for (int i = 0; i < baudName.Length; i++) {
+                        this.comboBox_rate.Items.Add(baudName[i]);
+                    }
+                    this.comboBox_rate.SelectedIndex = 3;
+                    break;
+                }
+
+                default:
+                    break;
             }
         }
 
@@ -1918,7 +2031,7 @@ namespace CanMonitor
     }
 
 
-    #endregion
+#endregion
 
     public static class ControlExtensions
     {

@@ -32,20 +32,23 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CanLogForm));
             this.label1 = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.checkBox_showEMCY = new System.Windows.Forms.CheckBox();
-            this.checkBox_showNMTEC = new System.Windows.Forms.CheckBox();
-            this.checkBox_showNMT = new System.Windows.Forms.CheckBox();
-            this.checkBox_showSDO = new System.Windows.Forms.CheckBox();
-            this.checkBox_showPDO = new System.Windows.Forms.CheckBox();
-            this.button_refresh = new System.Windows.Forms.Button();
-            this.checkBox_heartbeats = new System.Windows.Forms.CheckBox();
-            this.button_open = new System.Windows.Forms.Button();
-            this.comboBox_rate = new System.Windows.Forms.ComboBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.comboBox_port = new System.Windows.Forms.ComboBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.checkbox_autoscroll = new System.Windows.Forms.CheckBox();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.button_clear = new System.Windows.Forms.Button();
+            this.checkbox_autoscroll = new System.Windows.Forms.CheckBox();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button_refresh = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.comboBox_port = new System.Windows.Forms.ComboBox();
+            this.button_open = new System.Windows.Forms.Button();
+            this.label3 = new System.Windows.Forms.Label();
+            this.comboBox_rate = new System.Windows.Forms.ComboBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBox_showNMT = new System.Windows.Forms.CheckBox();
+            this.checkBox_showEMCY = new System.Windows.Forms.CheckBox();
+            this.checkBox_heartbeats = new System.Windows.Forms.CheckBox();
+            this.checkBox_showNMTEC = new System.Windows.Forms.CheckBox();
+            this.checkBox_showPDO = new System.Windows.Forms.CheckBox();
+            this.checkBox_showSDO = new System.Windows.Forms.CheckBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.listView1 = new System.Windows.Forms.ListView();
@@ -81,22 +84,20 @@
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.comboBox_vendor = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.tabPage4.SuspendLayout();
             this.menuStrip1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -129,60 +130,57 @@
             this.splitContainer1.SplitterDistance = 78;
             this.splitContainer1.TabIndex = 1;
             // 
-            // checkBox_showEMCY
+            // groupBox3
             // 
-            this.checkBox_showEMCY.AutoSize = true;
-            this.checkBox_showEMCY.Location = new System.Drawing.Point(116, 51);
-            this.checkBox_showEMCY.Name = "checkBox_showEMCY";
-            this.checkBox_showEMCY.Size = new System.Drawing.Size(56, 17);
-            this.checkBox_showEMCY.TabIndex = 10;
-            this.checkBox_showEMCY.Text = "EMCY";
-            this.checkBox_showEMCY.UseVisualStyleBackColor = true;
-            this.checkBox_showEMCY.CheckedChanged += new System.EventHandler(this.checkBox_emcy_CheckedChanged);
+            this.groupBox3.Controls.Add(this.comboBox_vendor);
+            this.groupBox3.Controls.Add(this.button_clear);
+            this.groupBox3.Controls.Add(this.checkbox_autoscroll);
+            this.groupBox3.Dock = System.Windows.Forms.DockStyle.Left;
+            this.groupBox3.Location = new System.Drawing.Point(366, 0);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(270, 78);
+            this.groupBox3.TabIndex = 13;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "View Options";
             // 
-            // checkBox_showNMTEC
+            // button_clear
             // 
-            this.checkBox_showNMTEC.AutoSize = true;
-            this.checkBox_showNMTEC.Location = new System.Drawing.Point(116, 34);
-            this.checkBox_showNMTEC.Name = "checkBox_showNMTEC";
-            this.checkBox_showNMTEC.Size = new System.Drawing.Size(64, 17);
-            this.checkBox_showNMTEC.TabIndex = 9;
-            this.checkBox_showNMTEC.Text = "NMTEC";
-            this.checkBox_showNMTEC.UseVisualStyleBackColor = true;
-            this.checkBox_showNMTEC.CheckedChanged += new System.EventHandler(this.checkBox_NMTEC_CheckedChanged);
+            this.button_clear.Location = new System.Drawing.Point(18, 19);
+            this.button_clear.Name = "button_clear";
+            this.button_clear.Size = new System.Drawing.Size(75, 23);
+            this.button_clear.TabIndex = 1;
+            this.button_clear.Text = "Clear all";
+            this.button_clear.UseVisualStyleBackColor = true;
+            this.button_clear.Click += new System.EventHandler(this.button_clear_Click);
             // 
-            // checkBox_showNMT
+            // checkbox_autoscroll
             // 
-            this.checkBox_showNMT.AutoSize = true;
-            this.checkBox_showNMT.Location = new System.Drawing.Point(116, 16);
-            this.checkBox_showNMT.Name = "checkBox_showNMT";
-            this.checkBox_showNMT.Size = new System.Drawing.Size(50, 17);
-            this.checkBox_showNMT.TabIndex = 8;
-            this.checkBox_showNMT.Text = "NMT";
-            this.checkBox_showNMT.UseVisualStyleBackColor = true;
-            this.checkBox_showNMT.CheckedChanged += new System.EventHandler(this.checkBox_nmt_CheckedChanged);
+            this.checkbox_autoscroll.AutoSize = true;
+            this.checkbox_autoscroll.Checked = true;
+            this.checkbox_autoscroll.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkbox_autoscroll.Location = new System.Drawing.Point(21, 51);
+            this.checkbox_autoscroll.Name = "checkbox_autoscroll";
+            this.checkbox_autoscroll.Size = new System.Drawing.Size(72, 17);
+            this.checkbox_autoscroll.TabIndex = 0;
+            this.checkbox_autoscroll.Text = "Autoscroll";
+            this.checkbox_autoscroll.UseVisualStyleBackColor = true;
+            this.checkbox_autoscroll.CheckedChanged += new System.EventHandler(this.checkbox_autoscroll_CheckedChanged);
             // 
-            // checkBox_showSDO
+            // groupBox2
             // 
-            this.checkBox_showSDO.AutoSize = true;
-            this.checkBox_showSDO.Location = new System.Drawing.Point(23, 53);
-            this.checkBox_showSDO.Name = "checkBox_showSDO";
-            this.checkBox_showSDO.Size = new System.Drawing.Size(49, 17);
-            this.checkBox_showSDO.TabIndex = 7;
-            this.checkBox_showSDO.Text = "SDO";
-            this.checkBox_showSDO.UseVisualStyleBackColor = true;
-            this.checkBox_showSDO.CheckedChanged += new System.EventHandler(this.checkBox_showSDO_CheckedChanged);
-            // 
-            // checkBox_showPDO
-            // 
-            this.checkBox_showPDO.AutoSize = true;
-            this.checkBox_showPDO.Location = new System.Drawing.Point(23, 35);
-            this.checkBox_showPDO.Name = "checkBox_showPDO";
-            this.checkBox_showPDO.Size = new System.Drawing.Size(49, 17);
-            this.checkBox_showPDO.TabIndex = 6;
-            this.checkBox_showPDO.Text = "PDO";
-            this.checkBox_showPDO.UseVisualStyleBackColor = true;
-            this.checkBox_showPDO.CheckedChanged += new System.EventHandler(this.checkBox_showPDO_CheckedChanged);
+            this.groupBox2.Controls.Add(this.button_refresh);
+            this.groupBox2.Controls.Add(this.label2);
+            this.groupBox2.Controls.Add(this.comboBox_port);
+            this.groupBox2.Controls.Add(this.button_open);
+            this.groupBox2.Controls.Add(this.label3);
+            this.groupBox2.Controls.Add(this.comboBox_rate);
+            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Left;
+            this.groupBox2.Location = new System.Drawing.Point(0, 0);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(366, 78);
+            this.groupBox2.TabIndex = 12;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Can Device";
             // 
             // button_refresh
             // 
@@ -196,16 +194,23 @@
             this.button_refresh.UseVisualStyleBackColor = true;
             this.button_refresh.Click += new System.EventHandler(this.button_refresh_Click);
             // 
-            // checkBox_heartbeats
+            // label2
             // 
-            this.checkBox_heartbeats.AutoSize = true;
-            this.checkBox_heartbeats.Location = new System.Drawing.Point(23, 17);
-            this.checkBox_heartbeats.Name = "checkBox_heartbeats";
-            this.checkBox_heartbeats.Size = new System.Drawing.Size(78, 17);
-            this.checkBox_heartbeats.TabIndex = 4;
-            this.checkBox_heartbeats.Text = "Heartbeats";
-            this.checkBox_heartbeats.UseVisualStyleBackColor = true;
-            this.checkBox_heartbeats.CheckedChanged += new System.EventHandler(this.checkBox_heartbeats_CheckedChanged);
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(11, 19);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(26, 13);
+            this.label2.TabIndex = 0;
+            this.label2.Text = "Port";
+            // 
+            // comboBox_port
+            // 
+            this.comboBox_port.FormattingEnabled = true;
+            this.comboBox_port.Location = new System.Drawing.Point(58, 13);
+            this.comboBox_port.Name = "comboBox_port";
+            this.comboBox_port.Size = new System.Drawing.Size(212, 21);
+            this.comboBox_port.TabIndex = 0;
+            this.comboBox_port.SelectedIndexChanged += new System.EventHandler(this.comboBox_port_SelectedIndexChanged);
             // 
             // button_open
             // 
@@ -218,6 +223,15 @@
             this.button_open.Text = "Open";
             this.button_open.UseVisualStyleBackColor = false;
             this.button_open.Click += new System.EventHandler(this.button_open_Click);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(12, 46);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(37, 13);
+            this.label3.TabIndex = 1;
+            this.label3.Text = "Bitrate";
             // 
             // comboBox_rate
             // 
@@ -238,55 +252,87 @@
             this.comboBox_rate.TabIndex = 2;
             this.comboBox_rate.SelectedIndexChanged += new System.EventHandler(this.comboBox_rate_SelectedIndexChanged);
             // 
-            // label3
+            // groupBox1
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 46);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(37, 13);
-            this.label3.TabIndex = 1;
-            this.label3.Text = "Bitrate";
+            this.groupBox1.Controls.Add(this.checkBox_showNMT);
+            this.groupBox1.Controls.Add(this.checkBox_showEMCY);
+            this.groupBox1.Controls.Add(this.checkBox_heartbeats);
+            this.groupBox1.Controls.Add(this.checkBox_showNMTEC);
+            this.groupBox1.Controls.Add(this.checkBox_showPDO);
+            this.groupBox1.Controls.Add(this.checkBox_showSDO);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Right;
+            this.groupBox1.Location = new System.Drawing.Point(906, 0);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(192, 78);
+            this.groupBox1.TabIndex = 11;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Packet Filters";
             // 
-            // comboBox_port
+            // checkBox_showNMT
             // 
-            this.comboBox_port.FormattingEnabled = true;
-            this.comboBox_port.Location = new System.Drawing.Point(58, 13);
-            this.comboBox_port.Name = "comboBox_port";
-            this.comboBox_port.Size = new System.Drawing.Size(212, 21);
-            this.comboBox_port.TabIndex = 0;
-            this.comboBox_port.SelectedIndexChanged += new System.EventHandler(this.comboBox_port_SelectedIndexChanged);
+            this.checkBox_showNMT.AutoSize = true;
+            this.checkBox_showNMT.Location = new System.Drawing.Point(116, 16);
+            this.checkBox_showNMT.Name = "checkBox_showNMT";
+            this.checkBox_showNMT.Size = new System.Drawing.Size(50, 17);
+            this.checkBox_showNMT.TabIndex = 8;
+            this.checkBox_showNMT.Text = "NMT";
+            this.checkBox_showNMT.UseVisualStyleBackColor = true;
+            this.checkBox_showNMT.CheckedChanged += new System.EventHandler(this.checkBox_nmt_CheckedChanged);
             // 
-            // label2
+            // checkBox_showEMCY
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(11, 19);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(26, 13);
-            this.label2.TabIndex = 0;
-            this.label2.Text = "Port";
+            this.checkBox_showEMCY.AutoSize = true;
+            this.checkBox_showEMCY.Location = new System.Drawing.Point(116, 51);
+            this.checkBox_showEMCY.Name = "checkBox_showEMCY";
+            this.checkBox_showEMCY.Size = new System.Drawing.Size(56, 17);
+            this.checkBox_showEMCY.TabIndex = 10;
+            this.checkBox_showEMCY.Text = "EMCY";
+            this.checkBox_showEMCY.UseVisualStyleBackColor = true;
+            this.checkBox_showEMCY.CheckedChanged += new System.EventHandler(this.checkBox_emcy_CheckedChanged);
             // 
-            // checkbox_autoscroll
+            // checkBox_heartbeats
             // 
-            this.checkbox_autoscroll.AutoSize = true;
-            this.checkbox_autoscroll.Checked = true;
-            this.checkbox_autoscroll.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkbox_autoscroll.Location = new System.Drawing.Point(21, 51);
-            this.checkbox_autoscroll.Name = "checkbox_autoscroll";
-            this.checkbox_autoscroll.Size = new System.Drawing.Size(72, 17);
-            this.checkbox_autoscroll.TabIndex = 0;
-            this.checkbox_autoscroll.Text = "Autoscroll";
-            this.checkbox_autoscroll.UseVisualStyleBackColor = true;
-            this.checkbox_autoscroll.CheckedChanged += new System.EventHandler(this.checkbox_autoscroll_CheckedChanged);
+            this.checkBox_heartbeats.AutoSize = true;
+            this.checkBox_heartbeats.Location = new System.Drawing.Point(23, 17);
+            this.checkBox_heartbeats.Name = "checkBox_heartbeats";
+            this.checkBox_heartbeats.Size = new System.Drawing.Size(78, 17);
+            this.checkBox_heartbeats.TabIndex = 4;
+            this.checkBox_heartbeats.Text = "Heartbeats";
+            this.checkBox_heartbeats.UseVisualStyleBackColor = true;
+            this.checkBox_heartbeats.CheckedChanged += new System.EventHandler(this.checkBox_heartbeats_CheckedChanged);
             // 
-            // button_clear
+            // checkBox_showNMTEC
             // 
-            this.button_clear.Location = new System.Drawing.Point(18, 19);
-            this.button_clear.Name = "button_clear";
-            this.button_clear.Size = new System.Drawing.Size(75, 23);
-            this.button_clear.TabIndex = 1;
-            this.button_clear.Text = "Clear all";
-            this.button_clear.UseVisualStyleBackColor = true;
-            this.button_clear.Click += new System.EventHandler(this.button_clear_Click);
+            this.checkBox_showNMTEC.AutoSize = true;
+            this.checkBox_showNMTEC.Location = new System.Drawing.Point(116, 34);
+            this.checkBox_showNMTEC.Name = "checkBox_showNMTEC";
+            this.checkBox_showNMTEC.Size = new System.Drawing.Size(64, 17);
+            this.checkBox_showNMTEC.TabIndex = 9;
+            this.checkBox_showNMTEC.Text = "NMTEC";
+            this.checkBox_showNMTEC.UseVisualStyleBackColor = true;
+            this.checkBox_showNMTEC.CheckedChanged += new System.EventHandler(this.checkBox_NMTEC_CheckedChanged);
+            // 
+            // checkBox_showPDO
+            // 
+            this.checkBox_showPDO.AutoSize = true;
+            this.checkBox_showPDO.Location = new System.Drawing.Point(23, 35);
+            this.checkBox_showPDO.Name = "checkBox_showPDO";
+            this.checkBox_showPDO.Size = new System.Drawing.Size(49, 17);
+            this.checkBox_showPDO.TabIndex = 6;
+            this.checkBox_showPDO.Text = "PDO";
+            this.checkBox_showPDO.UseVisualStyleBackColor = true;
+            this.checkBox_showPDO.CheckedChanged += new System.EventHandler(this.checkBox_showPDO_CheckedChanged);
+            // 
+            // checkBox_showSDO
+            // 
+            this.checkBox_showSDO.AutoSize = true;
+            this.checkBox_showSDO.Location = new System.Drawing.Point(23, 53);
+            this.checkBox_showSDO.Name = "checkBox_showSDO";
+            this.checkBox_showSDO.Size = new System.Drawing.Size(49, 17);
+            this.checkBox_showSDO.TabIndex = 7;
+            this.checkBox_showSDO.Text = "SDO";
+            this.checkBox_showSDO.UseVisualStyleBackColor = true;
+            this.checkBox_showSDO.CheckedChanged += new System.EventHandler(this.checkBox_showSDO_CheckedChanged);
             // 
             // tabControl1
             // 
@@ -365,7 +411,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1090, 577);
+            this.tabPage2.Size = new System.Drawing.Size(1090, 566);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "NMT";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -380,7 +426,7 @@
             this.listView_nmt.HideSelection = false;
             this.listView_nmt.Location = new System.Drawing.Point(3, 3);
             this.listView_nmt.Name = "listView_nmt";
-            this.listView_nmt.Size = new System.Drawing.Size(1084, 571);
+            this.listView_nmt.Size = new System.Drawing.Size(1084, 560);
             this.listView_nmt.TabIndex = 0;
             this.listView_nmt.UseCompatibleStateImageBehavior = false;
             this.listView_nmt.View = System.Windows.Forms.View.Details;
@@ -404,7 +450,7 @@
             this.tabPage3.Controls.Add(this.listView_emcy);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(1090, 577);
+            this.tabPage3.Size = new System.Drawing.Size(1090, 566);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Emergency";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -420,7 +466,7 @@
             this.listView_emcy.HideSelection = false;
             this.listView_emcy.Location = new System.Drawing.Point(0, 0);
             this.listView_emcy.Name = "listView_emcy";
-            this.listView_emcy.Size = new System.Drawing.Size(1090, 577);
+            this.listView_emcy.Size = new System.Drawing.Size(1090, 566);
             this.listView_emcy.TabIndex = 0;
             this.listView_emcy.UseCompatibleStateImageBehavior = false;
             this.listView_emcy.View = System.Windows.Forms.View.Details;
@@ -451,7 +497,7 @@
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(1090, 577);
+            this.tabPage4.Size = new System.Drawing.Size(1090, 566);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Info";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -464,7 +510,7 @@
             this.textBox_info.Name = "textBox_info";
             this.textBox_info.ReadOnly = true;
             this.textBox_info.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox_info.Size = new System.Drawing.Size(1084, 571);
+            this.textBox_info.Size = new System.Drawing.Size(1084, 560);
             this.textBox_info.TabIndex = 0;
             // 
             // menuStrip1
@@ -565,49 +611,13 @@
             this.notifyIcon1.Visible = true;
             this.notifyIcon1.DoubleClick += new System.EventHandler(this.notifyIcon1_DoubleClick);
             // 
-            // groupBox1
+            // comboBox_vendor
             // 
-            this.groupBox1.Controls.Add(this.checkBox_showNMT);
-            this.groupBox1.Controls.Add(this.checkBox_showEMCY);
-            this.groupBox1.Controls.Add(this.checkBox_heartbeats);
-            this.groupBox1.Controls.Add(this.checkBox_showNMTEC);
-            this.groupBox1.Controls.Add(this.checkBox_showPDO);
-            this.groupBox1.Controls.Add(this.checkBox_showSDO);
-            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.groupBox1.Location = new System.Drawing.Point(906, 0);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(192, 78);
-            this.groupBox1.TabIndex = 11;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Packet Filters";
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.button_refresh);
-            this.groupBox2.Controls.Add(this.label2);
-            this.groupBox2.Controls.Add(this.comboBox_port);
-            this.groupBox2.Controls.Add(this.button_open);
-            this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Controls.Add(this.comboBox_rate);
-            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Left;
-            this.groupBox2.Location = new System.Drawing.Point(0, 0);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(366, 78);
-            this.groupBox2.TabIndex = 12;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Can Device";
-            // 
-            // groupBox3
-            // 
-            this.groupBox3.Controls.Add(this.button_clear);
-            this.groupBox3.Controls.Add(this.checkbox_autoscroll);
-            this.groupBox3.Dock = System.Windows.Forms.DockStyle.Left;
-            this.groupBox3.Location = new System.Drawing.Point(366, 0);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(270, 78);
-            this.groupBox3.TabIndex = 13;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "View Options";
+            this.comboBox_vendor.FormattingEnabled = true;
+            this.comboBox_vendor.Location = new System.Drawing.Point(136, 49);
+            this.comboBox_vendor.Name = "comboBox_vendor";
+            this.comboBox_vendor.Size = new System.Drawing.Size(121, 21);
+            this.comboBox_vendor.TabIndex = 2;
             // 
             // CanLogForm
             // 
@@ -629,6 +639,12 @@
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
@@ -637,12 +653,6 @@
             this.tabPage4.PerformLayout();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -704,6 +714,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.ComboBox comboBox_vendor;
     }
 }
 
