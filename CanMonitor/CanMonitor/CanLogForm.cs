@@ -14,22 +14,29 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml.Linq;
-using WeifenLuo.WinFormsUI.Docking;
+using Peak.Can.Basic;
+using TPCANHandle = System.Byte;
+using can_hw;
 
 namespace CanMonitor
 {
     public partial class CanLogForm : DockContent, ICanDocument
     {
+        #region PEAK-specific members
+        private TPCANHandle[] m_HandlesArray;
+        private TPCANHandle m_PcanHandle;
+        private TPCANBaudrate m_PcanBaudRate;
+        #endregion
 
-   
+
         public DockPanel dockpanel;
 
         List<ListViewItem> listitems = new List<ListViewItem>();
 
-     
 
-     
-       
+
+
+
 
         Dictionary<UInt32, List<byte>> sdotransferdata = new Dictionary<uint, List<byte>>();
 
@@ -37,7 +44,7 @@ namespace CanMonitor
 
         StreamWriter sw;
 
-   
+
         Timer savetimer;
 
         public CanLogForm()
@@ -52,21 +59,56 @@ namespace CanMonitor
 
             InitializeComponent();
 
-          
 
 
-            Program.lco.dbglevel = debuglevel.DEBUG_NONE;
+            this.comboBox_vendor.Items.Clear();
+            var vendorNames = Enum.GetNames(typeof(SupportedVendor));
+            for (int i = 0; i < vendorNames.Length; i++)
+            {
+                this.comboBox_vendor.Items.Add(vendorNames[i]);
+            }
+            this.comboBox_vendor.SelectedIndex = 1;
 
-            Program.lco.nmtecevent += log_NMTEC;
-            Program.lco.nmtevent += log_NMT;
-            Program.lco.sdoevent += log_SDO;
-            Program.lco.pdoevent += log_PDO;
-            Program.lco.emcyevent += log_EMCY;
+            this.m_HandlesArray = new TPCANHandle[] {
+                PCANBasic.PCAN_USBBUS1,
+                PCANBasic.PCAN_USBBUS2,
+                PCANBasic.PCAN_USBBUS3,
+                PCANBasic.PCAN_USBBUS4,
+                PCANBasic.PCAN_USBBUS5,
+                PCANBasic.PCAN_USBBUS6,
+                PCANBasic.PCAN_USBBUS7,
+                PCANBasic.PCAN_USBBUS8,
+            };
+
+            textBox_info.AppendText("Searching for drivers...\r\n\r\n");
+            string[] founddrivers = Directory.GetFiles("drivers\\", "*.dll");
+
+            foreach (string driver in founddrivers)
+            {
+                textBox_info.AppendText(string.Format("Found driver {0}\r\n", driver));
+                drivers.Add(driver.Substring(0, driver.Length - 4));
+            }
+
+            //enumerateports();
+            enumerateports((SupportedVendor)this.comboBox_vendor.SelectedIndex);
+
+            if (comboBox_port.Items.Count == 0)
+            {
+                MessageBox.Show("No COM ports detected, if the CanUSB is connected please ensure\n that it is set to Load VCP in properties page in device manager\nOr please insert a device now and press 'R' to refresh port list");
+            }
+
+            lco.dbglevel = debuglevel.DEBUG_NONE;
+
+            lco.nmtecevent += log_NMTEC;
+            lco.nmtevent += log_NMT;
+            lco.sdoevent += log_SDO;
+            lco.pdoevent += log_PDO;
+            lco.emcyevent += log_EMCY;
 
             listView1.DoubleBuffering(true);
-          
-         
-            
+
+
+
             listView1.ListViewItemSorter = null;
 
             updatetimer.Interval = 1000;
@@ -74,10 +116,46 @@ namespace CanMonitor
 
             updatetimer_Tick(null, new EventArgs());
 
-            //FIXME this is messy
-            //FIXME autoload/start plugins may be a problem with docpanel                
+            var autoloadPath = Path.Combine(assemblyfolder, "autoload.txt");
+            if (File.Exists(autoloadPath))
+            {
+                string[] autoload = System.IO.File.ReadAllLines(autoloadPath);
 
-           // Program.pluginManager.autoloadplugins();
+                foreach (string plugin in autoload)
+                {
+                    loadplugin(plugin, false);
+                }
+            }
+
+            if (appdatafolder != assemblyfolder)
+            {
+                autoloadPath = Path.Combine(appdatafolder, "autoload.txt");
+                if (File.Exists(autoloadPath))
+                {
+                    string[] autoload = System.IO.File.ReadAllLines(autoloadPath);
+
+                    foreach (string plugin in autoload)
+                    {
+                        loadplugin(plugin, false);
+                    }
+                }
+            }
+
+
+            Properties.Settings.Default.Reload();
+
+#if false
+            //select last used port
+            foreach (driverport dp in comboBox_port.Items)
+            {
+
+                if (dp.port == Properties.Settings.Default.lastport)
+                {
+                    comboBox_port.SelectedItem = dp;
+                    break;
+                }
+            }
+#endif
 
             this.Shown += Form1_Shown;
 
@@ -91,7 +169,7 @@ namespace CanMonitor
             last = DateTime.Now;
         }
 
-   
+
         DateTime last;
 
         public void clearlist()
@@ -144,10 +222,10 @@ namespace CanMonitor
             //     button_open_Click(this, new EventArgs());
             // }
 
-          
+
         }
 
-      
+
 
         void appendfile(string[] ss)
         {
@@ -180,7 +258,7 @@ namespace CanMonitor
 
                     listitems.Clear();
 
-                //    Properties.Settings.Default.Reload();
+                    //    Properties.Settings.Default.Reload();
                     bool s = Properties.Settings.Default.autoscroll;
 
                     if (Properties.Settings.Default.autoscroll && listView1.Items.Count > 2)
@@ -197,7 +275,7 @@ namespace CanMonitor
 
                 }
 
-         
+
 
 
         }
@@ -311,7 +389,7 @@ namespace CanMonitor
                 }
             }
 
-    
+
 
 
 
@@ -762,26 +840,357 @@ namespace CanMonitor
 
             }
 
-           
+
 
             appendfile(items);
 
         }
 
-      
-   
+
+        Dictionary<UInt16, string> errcode = new Dictionary<ushort, string>();
+        Dictionary<UInt16, string> errbit = new Dictionary<ushort, string>();
+
+        private void interror()
+        {
+
+            errcode.Add(0x0000, "error Reset or No Error");
+            errcode.Add(0x1000, "Generic Error");
+            errcode.Add(0x2000, "Current");
+            errcode.Add(0x2100, "device input side");
+            errcode.Add(0x2200, "Current inside the device");
+            errcode.Add(0x2300, "device output side");
+            errcode.Add(0x3000, "Voltage");
+            errcode.Add(0x3100, "Mains Voltage");
+            errcode.Add(0x3200, "Voltage inside the device");
+            errcode.Add(0x3300, "Output Voltage");
+            errcode.Add(0x4000, "Temperature");
+            errcode.Add(0x4100, "Ambient Temperature");
+            errcode.Add(0x4200, "Device Temperature");
+            errcode.Add(0x5000, "Device Hardware");
+            errcode.Add(0x6000, "Device Software");
+            errcode.Add(0x6100, "Internal Software");
+            errcode.Add(0x6200, "User Software");
+            errcode.Add(0x6300, "Data Set");
+            errcode.Add(0x7000, "Additional Modules");
+            errcode.Add(0x8000, "Monitoring");
+            errcode.Add(0x8100, "Communication");
+            errcode.Add(0x8110, "CAN Overrun (Objects lost)");
+            errcode.Add(0x8120, "CAN in Error Passive Mode");
+            errcode.Add(0x8130, "Life Guard Error or Heartbeat Error");
+            errcode.Add(0x8140, "recovered from bus off");
+            errcode.Add(0x8150, "CAN-ID collision");
+            errcode.Add(0x8200, "Protocol Error");
+            errcode.Add(0x8210, "PDO not processed due to length error");
+            errcode.Add(0x8220, "PDO length exceeded");
+            errcode.Add(0x8230, "destination object not available");
+            errcode.Add(0x8240, "Unexpected SYNC data length");
+            errcode.Add(0x8250, "RPDO timeout");
+            errcode.Add(0x9000, "External Error");
+            errcode.Add(0xF000, "Additional Functions");
+            errcode.Add(0xFF00, "Device specific");
+
+            errcode.Add(0x2310, "Current at outputs too high (overload)");
+            errcode.Add(0x2320, "Short circuit at outputs");
+            errcode.Add(0x2330, "Load dump at outputs");
+            errcode.Add(0x3110, "Input voltage too high");
+            errcode.Add(0x3120, "Input voltage too low");
+            errcode.Add(0x3210, "Internal voltage too high");
+            errcode.Add(0x3220, "Internal voltage too low");
+            errcode.Add(0x3310, "Output voltage too high");
+            errcode.Add(0x3320, "Output voltage too low");
+
+            errbit.Add(0x00, "Error Reset or No Error");
+            errbit.Add(0x01, "CAN bus warning limit reached");
+            errbit.Add(0x02, "Wrong data length of the received CAN message");
+            errbit.Add(0x03, "Previous received CAN message wasn't processed yet");
+            errbit.Add(0x04, "Wrong data length of received PDO");
+            errbit.Add(0x05, "Previous received PDO wasn't processed yet");
+            errbit.Add(0x06, "CAN receive bus is passive");
+            errbit.Add(0x07, "CAN transmit bus is passive");
+            errbit.Add(0x08, "Wrong NMT command received");
+            errbit.Add(0x09, "(unused)");
+            errbit.Add(0x0A, "(unused)");
+            errbit.Add(0x0B, "(unused)");
+            errbit.Add(0x0C, "(unused)");
+            errbit.Add(0x0D, "(unused)");
+            errbit.Add(0x0E, "(unused)");
+            errbit.Add(0x0F, "(unused)");
+
+            errbit.Add(0x10, "(unused)");
+            errbit.Add(0x11, "(unused)");
+            errbit.Add(0x12, "CAN transmit bus is off");
+            errbit.Add(0x13, "CAN module receive buffer has overflowed");
+            errbit.Add(0x14, "CAN transmit buffer has overflowed");
+            errbit.Add(0x15, "TPDO is outside SYNC window");
+            errbit.Add(0x16, "(unused)");
+            errbit.Add(0x17, "(unused)");
+            errbit.Add(0x18, "SYNC message timeout");
+            errbit.Add(0x19, "Unexpected SYNC data length");
+            errbit.Add(0x1A, "Error with PDO mapping");
+            errbit.Add(0x1B, "Heartbeat consumer timeout");
+            errbit.Add(0x1C, "Heartbeat consumer detected remote node reset");
+            errbit.Add(0x1D, "(unused)");
+            errbit.Add(0x1E, "(unused)");
+            errbit.Add(0x1F, "(unused)");
+
+            errbit.Add(0x20, "Emergency message wasn't sent");
+            errbit.Add(0x21, "(unused)");
+            errbit.Add(0x22, "Microcontroller has just started");
+            errbit.Add(0x23, "(unused)");
+            errbit.Add(0x24, "(unused)");
+            errbit.Add(0x25, "(unused)");
+            errbit.Add(0x26, "(unused)");
+            errbit.Add(0x27, "(unused)");
+
+            errbit.Add(0x28, "Wrong parameters to CO_errorReport() function");
+            errbit.Add(0x29, "Timer task has overflowed");
+            errbit.Add(0x2A, "Unable to allocate memory for objects");
+            errbit.Add(0x2B, "test usage");
+            errbit.Add(0x2C, "Software error");
+            errbit.Add(0x2D, "Object dictionary does not match the software");
+            errbit.Add(0x2E, "Error in calculation of device parameters");
+            errbit.Add(0x2F, "Error with access to non volatile device memory");
+
+            sdoerrormessages.Add(0x05030000, "Toggle bit not altered");
+            sdoerrormessages.Add(0x05040000, "SDO protocol timed out");
+            sdoerrormessages.Add(0x05040001, "Command specifier not valid or unknown");
+            sdoerrormessages.Add(0x05040002, "Invalid block size in block mode");
+            sdoerrormessages.Add(0x05040003, "Invalid sequence number in block mode");
+            sdoerrormessages.Add(0x05040004, "CRC error (block mode only)");
+            sdoerrormessages.Add(0x05040005, "Out of memory");
+            sdoerrormessages.Add(0x06010000, "Unsupported access to an object");
+            sdoerrormessages.Add(0x06010001, "Attempt to read a write only object");
+            sdoerrormessages.Add(0x06010002, "Attempt to write a read only object");
+            sdoerrormessages.Add(0x06020000, "Object does not exist");
+            sdoerrormessages.Add(0x06040041, "Object cannot be mapped to the PDO");
+            sdoerrormessages.Add(0x06040042, "Number and length of object to be mapped exceeds PDO length");
+            sdoerrormessages.Add(0x06040043, "General parameter incompatibility reasons");
+            sdoerrormessages.Add(0x06040047, "General internal incompatibility in device");
+            sdoerrormessages.Add(0x06060000, "Access failed due to hardware error");
+            sdoerrormessages.Add(0x06070010, "Data type does not match, length of service parameter does not match");
+            sdoerrormessages.Add(0x06070012, "Data type does not match, length of service parameter too high");
+            sdoerrormessages.Add(0x06070013, "Data type does not match, length of service parameter too short");
+            sdoerrormessages.Add(0x06090011, "Sub index does not exist");
+            sdoerrormessages.Add(0x06090030, "Invalid value for parameter (download only).");
+            sdoerrormessages.Add(0x06090031, "Value range of parameter written too high");
+            sdoerrormessages.Add(0x06090032, "Value range of parameter written too low");
+            sdoerrormessages.Add(0x06090036, "Maximum value is less than minimum value.");
+            sdoerrormessages.Add(0x060A0023, "Resource not available: SDO connection");
+            sdoerrormessages.Add(0x08000000, "General error");
+            sdoerrormessages.Add(0x08000020, "Data cannot be transferred or stored to application");
+            sdoerrormessages.Add(0x08000021, "Data cannot be transferred or stored to application because of local control");
+            sdoerrormessages.Add(0x08000022, "Data cannot be transferred or stored to application because of present device state");
+            sdoerrormessages.Add(0x08000023, "Object dictionary not present or dynamic generation fails");
+            sdoerrormessages.Add(0x08000024, "No data available");
+
+
+        }
+
+
+
+        private void button_open_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                lco.close();
+
+                if (button_open.Text == "Close")
+                {
+
+
+                    if (sw != null)
+                        sw.Close();
+
+                    button_open.BackColor = Color.Green;
+                    button_open.Text = "Open";
+
+                    textBox_info.AppendText("PORT CLOSED\r\n");
+                    return;
+                }
+
+                if (comboBox_port.SelectedItem == null)
+                {
+                    comboBox_port.Text = "";
+                    return;
+                }
+
+#if false
+                driverport dp = (driverport)comboBox_port.SelectedItem;
+
+                textBox_info.AppendText(String.Format("Trying to open port {0} using driver {1} \r\n", dp.port, dp.driver));
+
+                int rate = comboBox_rate.SelectedIndex;
+
+
+                string port = dp.port;
+
+                if (dp.port.Contains("USB"))
+                {
+                    sComPortModel s = cpm.requestSerialPortById(dp.VID, dp.PID, "", "");
+                    s.DeviceConnected += S_DeviceConnected;
+                    s.DeviceDisconnected += S_DeviceDisconnected;
+                    port = s.port;
+                }
+
+                lco.open(port, (BUSSPEED)rate, dp.driver);
+#else
+                lco.open(this.m_PcanHandle, this.m_PcanBaudRate);
+#endif
+
+                if (lco.isopen())
+                {
+                    button_open.Text = "Close";
+                    button_open.BackColor = Color.Red;
+                    //fixme make this user selectable from GUI
+                    //sw = new StreamWriter("canlog.txt", true);
+
+                    textBox_info.AppendText("Success port open\r\n");
+
+#if false
+                    Properties.Settings.Default.lastport = dp.port;
+                    Properties.Settings.Default.lastdriver = dp.driver;
+                    Properties.Settings.Default.lastrate = comboBox_rate.Text;
+#endif
+
+                    Properties.Settings.Default.Save();
+
+                    foreach (KeyValuePair<string, object> kvp in plugins)
+                    {
+                        IInterfaceService iis = (IInterfaceService)kvp.Value;
+                        iis.setlco(lco);
+                    }
+
+                }
+                else
+                {
+                    button_open.Text = "Open";
+                    button_open.BackColor = Color.Green;
+                    textBox_info.AppendText("ERROR opening port\r\n");
+                }
+            }
+            catch (Exception ex)
+            {
+                textBox_info.AppendText("ERROR opening port " + ex.ToString() + "\r\n");
+                MessageBox.Show("Setup error " + ex.ToString());
+
+            }
+
+            button_open.Enabled = true;
+        }
+
+        private void S_DeviceDisconnected(object sender, EventArgs e)
+        {
+            comboBox_rate.Invoke(new MethodInvoker(delegate
+            {
+
+                if (lco.isopen())
+                    lco.close();
+
+                button_open.Text = "Open";
+
+            }));
+        }
+
+        private void S_DeviceConnected(object sender, EventArgs e)
+        {
+
+            comboBox_rate.Invoke(new MethodInvoker(delegate
+            {
+
+                sComPortModel s = (sComPortModel)sender;
+                int rate = comboBox_rate.SelectedIndex;
+
+                lco.close();
+
+#if false /// TODO
+                //FIXME hardcoded driver
+                lco.open(s.port, (BUSSPEED)rate, "drivers\\can_canusb_win32");
+#endif
+
+                button_open.Text = "Close";
+                textBox_info.AppendText("Success port open\r\n");
+
+            }));
+
+        }
+
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            
+
         }
 
         private void button_clear_Click(object sender, EventArgs e)
         {
-          
 
-            
-            //fixme clearall
 
+
+            lock (EMClistitems)
+            {
+                EMClistitems.Clear();
+                listView_emcy.Items.Clear();
+            }
+
+            lock (dirtyNMTstates)
+            {
+                NMTstate.Clear();
+                dirtyNMTstates.Clear();
+                listView_nmt.Items.Clear();
+            }
+
+        }
+
+        private void quitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void comboBox_port_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SettingsMgr.settings.options.selectedport = comboBox_port.SelectedItem.ToString();
+
+            string strTemp = comboBox_port.Text;
+            strTemp = strTemp.Substring(strTemp.IndexOf('B') + 1, 1);
+            strTemp = "0x5" + strTemp;
+            this.m_PcanHandle = Convert.ToByte(strTemp, 16);
+        }
+
+        private void comboBox_rate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SettingsMgr.settings.options.selectedrate = comboBox_rate.SelectedIndex;
+
+            TPCANBaudrate[] baudValue = (TPCANBaudrate[])Enum.GetValues(typeof(TPCANBaudrate));
+            this.m_PcanBaudRate = baudValue[this.comboBox_rate.SelectedIndex];
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+
+
+            comboBox_rate.SelectedIndex = SettingsMgr.settings.options.selectedrate;
+            comboBox_port.SelectedItem = SettingsMgr.settings.options.selectedport;
+
+            //read git version string, show in title bar 
+            //(https://stackoverflow.com/a/15145121)
+            string gitVersion = String.Empty;
+            using (Stream stream = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("CanMonitor." + "version.txt"))
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                gitVersion = reader.ReadToEnd();
+            }
+            if (gitVersion == "")
+            {
+                gitVersion = "Unknown";
+            }
+            this.Text += " -- " + gitVersion;
+            this.gitVersion = gitVersion;
+
+            var mruFilePath = Path.Combine(appdatafolder, "PLUGINMRU.txt");
+            if (System.IO.File.Exists(mruFilePath))
+                _mru.AddRange(System.IO.File.ReadAllLines(mruFilePath));
+
+            populateMRU();
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -793,6 +1202,8 @@ namespace CanMonitor
             }
         }
 
+
+
         #region pluginloader
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -800,7 +1211,7 @@ namespace CanMonitor
 
         }
 
-      
+
         public void dosave(string filename)
         {
             XElement xeRoot = new XElement("CanOpenMonitor");
@@ -992,11 +1403,163 @@ namespace CanMonitor
         }
 
 
-      
+
 
         private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void button_refresh_Click(object sender, EventArgs e)
+        {
+#if false
+            enumerateports();
+#else
+            this.enumerateports((SupportedVendor)this.comboBox_vendor.SelectedIndex);
+#endif
+        }
+
+
+        private void enumerateports()
+        {
+            comboBox_port.Text = "";
+            comboBox_port.Items.Clear();
+
+            textBox_info.AppendText("\r\nEnumerating ports....\r\n\r\n");
+
+            foreach (string s in drivers)
+            {
+                textBox_info.AppendText(String.Format("Attempting to enumerate with driver {0}\r\n", s));
+
+                try
+                {
+                    lco.enumerate(s);
+                }
+                catch (Exception e)
+                {
+                    textBox_info.AppendText(e.ToString() + "\r\n");
+                }
+            }
+
+            textBox_info.AppendText("\r\n");
+
+            foreach (KeyValuePair<string, List<string>> kvp in lco.ports)
+            {
+                List<string> ps = kvp.Value;
+
+
+                textBox_info.AppendText($"Driver {kvp.Key} has {kvp.Value.Count} ports\r\n");
+
+                foreach (string s in ps)
+                {
+                    textBox_info.AppendText(string.Format("Found port {0}\r\n", s));
+                    driverport dp = new driverport();
+                    dp.port = s;
+                    dp.driver = kvp.Key;
+                    comboBox_port.Items.Add(dp);
+                }
+
+                textBox_info.AppendText("\r\n");
+            }
+
+            textBox_info.AppendText("\r\n");
+
+            List<sComPortModel> psx = cpm.GetPorts();
+
+            foreach (sComPortModel p in psx)
+            {
+                driverport dp = new driverport();
+                dp.port = string.Format($"USB/VID_{p.vid}/PID_{p.pid}");
+                dp.PID = p.pid;
+                dp.VID = p.vid;
+                dp.driver = "drivers\\can_canusb_win32";
+                comboBox_port.Items.Add(dp);
+            }
+        }
+
+        private void enumerateports(SupportedVendor vendor)
+        {
+            comboBox_port.Text = "";
+            comboBox_port.Items.Clear();
+
+
+            textBox_info.AppendText("Enumerating ports...." + Environment.NewLine);
+
+            switch (vendor)
+            {
+#if false
+                case SupportedVendor.CANFESTIVAL: {
+                    foreach (string s in drivers) {
+                        textBox_info.AppendText(String.Format("Attempting to enumerate with driver {0}", s) + Environment.NewLine);
+
+                        lco.enumerate(s);
+                    }
+
+                    foreach (KeyValuePair<string, List<string>> kvp in lco.ports) {
+                        List<string> ps = kvp.Value;
+
+                        foreach (string s in ps) {
+
+                            textBox_info.AppendText(string.Format("Found port {0}", s) + Environment.NewLine);
+
+                            driverport dp = new driverport();
+                            dp.port = s;
+                            dp.driver = kvp.Key;
+
+                            comboBox_port.Items.Add(dp);
+                        }
+                    }
+                    break;
+                }
+#endif
+                case SupportedVendor.PEAK:
+                    {
+                        UInt32 iBuffer;
+                        TPCANStatus stsResult;
+                        try
+                        {
+                            for (int i = 0; i < m_HandlesArray.Length; i++)
+                            {
+                                // Includes all no-Plug&Play Handles
+                                if ((m_HandlesArray[i] >= PCANBasic.PCAN_USBBUS1) &&
+                                    (m_HandlesArray[i] <= PCANBasic.PCAN_USBBUS8))
+                                {
+                                    stsResult = PCANBasic.GetValue(m_HandlesArray[i], TPCANParameter.PCAN_CHANNEL_CONDITION, out iBuffer, sizeof(UInt32));
+                                    if ((stsResult == TPCANStatus.PCAN_ERROR_OK) && (iBuffer == PCANBasic.PCAN_CHANNEL_AVAILABLE))
+                                    {
+                                        this.comboBox_port.Items.Add(string.Format("PCAN-USB{0}", m_HandlesArray[i] & 0x0F));
+                                    }
+                                }
+                            }
+                            this.comboBox_port.SelectedIndex = this.comboBox_port.Items.Count - 1;
+
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message, "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            Environment.Exit(-1);
+                        }
+
+                        string[] baudName = Enum.GetNames(typeof(TPCANBaudrate));
+                        this.comboBox_rate.Items.Clear();
+                        for (int i = 0; i < baudName.Length; i++)
+                        {
+                            this.comboBox_rate.Items.Add(baudName[i]);
+                        }
+                        this.comboBox_rate.SelectedIndex = 3;
+                        break;
+                    }
+
+                default:
+                    break;
+            }
+        }
+
+        private void preferencesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+            Prefs p = new Prefs(appdatafolder, assemblyfolder);
+            p.ShowDialog();
         }
 
         private void Form1_Resize(object sender, EventArgs e)
@@ -1018,15 +1581,16 @@ namespace CanMonitor
             notifyIcon1.Visible = false;
         }
 
-       
+
+
 
         #endregion
 
         #region controls
 
 
-
         #endregion
+#endregion
 
     }
 
