@@ -11,7 +11,9 @@ namespace NanomsgBridge
 
         public NanoBridge()
         {
+#if false /// TODO
             lcobridge.open("ipc://can_id1", BUSSPEED.BUS_500Kbit, "can_nanomsg_win32");
+#endif
             lcobridge.packetevent += Lcobridge_packetevent;
           
         }
